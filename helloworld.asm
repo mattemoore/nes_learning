@@ -24,6 +24,7 @@ vblankwait:
 .endproc
 
 .proc main
+  PPUMASK=$2001
   PPUSTATUS=$2002
   PPUADDR=$2006
   PPUDATA=$2007
@@ -31,16 +32,20 @@ vblankwait:
   ; prep PPU for writing
   LDX PPUSTATUS
 
-  ; store PPU write address
+  ; store PPU write address ($3F00 is address of first pallette)
   LDX #$3F
   STX PPUADDR
   LDX #$00
   STX PPUADDR
 
+  ; write color value to write address 
   LDA #$29
-  STA $2007
+  STA PPUDATA
+
+  ; draw background
   LDA #%00011110
-  STA $2001
+  STA PPUMASK
+
 forever:
   JMP forever
 .endproc
