@@ -3,6 +3,7 @@
 Basic NES game dev - 6502 assembly
 
 Absorbing example/tutorial from <https://book.famicom.party/>
+
 Setup on OSX:
 
 1. `brew install cc65`
