@@ -1,11 +1,5 @@
-PPUCTRL=$2000
-PPUMASK=$2001
-PPUSTATUS=$2002
-PPUADDR=$2006
-PPUDATA=$2007
-
-.segment "HEADER"                         ; iNes header (e.g. 2x16KB PRG-ROMs, 1x8KB CHR-ROM, mapper 0)
-.byte "NES", 26, 2, 1, 0, 0
+.include "constants.inc"
+.include "header.inc"
 
 .segment "CODE"                           ; PRG-ROM
 .proc irq_handler                         ; sound/catridge interrupt
