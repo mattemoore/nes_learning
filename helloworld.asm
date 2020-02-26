@@ -1,9 +1,8 @@
-; iNes header (e.g. 2x16KB PRG-ROMs, 1x8KB CHR-ROM, mapper 0)
-.segment "HEADER"
+.segment "HEADER"                         ; iNes header (e.g. 2x16KB PRG-ROMs, 1x8KB CHR-ROM, mapper 0)
 .byte "NES", 26, 2, 1, 0, 0
 
-; PRG-ROM
-.segment "CODE"
+
+.segment "CODE"                           ; PRG-ROM
 .proc irq_handler                         ; sound/catridge interrupt
             RTI
 .endproc
@@ -45,12 +44,10 @@ vblankwait: BIT $2002
 forever:    JMP   forever
 .endproc
 
-; specify interrupt handlers
-.segment "VECTORS"
+.segment "VECTORS"                        ; specify interrupt handlers
 .addr nmi_handler, reset_handler, irq_handler
 
-; CHR-ROM
-.segment "CHARS"
+.segment "CHARS"                          ; CHR-ROM
 .res 8192
 
 .segment "STARTUP"
