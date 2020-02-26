@@ -10,19 +10,9 @@
             RTI
 .endproc
 
-.proc reset_handler                       ; startup/reset button interrupt
-            SEI                           ; ignore interrupts
-            CLD
+.import reset_handler                     ; imported reset handler
 
-            LDX #$00                      ; disable rendering during startup
-            STX PPUCTRL
-            STX PPUMASK
-
-vblankwait: BIT PPUSTATUS                 ; wait until PPU ready
-            BPL vblankwait
-            JMP main
-.endproc
-
+.export main                              ; make main referrable
 .proc main
             LDX   PPUSTATUS               ; prep PPU for writing
 

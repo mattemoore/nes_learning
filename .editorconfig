@@ -1,0 +1,4 @@
+root = true
+[*.{asm,inc}]
+indent_style = space
+indent_size = 6
