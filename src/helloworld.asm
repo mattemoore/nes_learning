@@ -33,7 +33,7 @@ forever:    JMP   forever
 .segment "VECTORS"                        ; specify interrupt handlers
 .addr nmi_handler, reset_handler, irq_handler
 
-.segment "CHR"                          ; CHR-ROM
+.segment "CHR"                            ; CHR-ROM
 .res 8192
 
 .segment "STARTUP"
