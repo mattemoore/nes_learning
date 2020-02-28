@@ -7,7 +7,10 @@
 .endproc
 
 .proc nmi_handler                         ; draw frame interrupt (60/sec)
-            RTI
+            LDA #$00                      ; transfer $0200-$02FF into OAM
+            STA OAMADDR
+            LDA #$20
+            STA OAMDMA
 .endproc
 
 .import reset_handler                     ; imported reset handler
