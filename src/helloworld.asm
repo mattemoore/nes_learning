@@ -19,36 +19,30 @@
 .export main                              ; make main referrable
 .proc main
             LDX   PPUSTATUS               ; prep PPU for writing
-
-            ; write pallette values in PPU memory
-            LDX   #$3F                    ; store PPU write address ($3F00 is address of first pallette)
+            LDX   #$3F                    ; store PPU write address ($3F00 is start of pallette memory)
             STX   PPUADDR
             LDX   #$00
             STX   PPUADDR
-            LDA   #$0F
-            STA   PPUDATA                 ; each write increments PPUADDR by one byte
-            LDA   #$09
+          
+            LDX   #$00
+load_plts1: LDA   pallettes,X             ; write background pallette values in PPU memory
             STA   PPUDATA
-            LDA   #$19
-            STA   PPUDATA
-            LDA   #$29
+            INX
+            CPX   #$20
+            BNE   load_plts1
 
-            ; copy sprite data to OAM buffer in CPU memory
-            ; NMI interrupt then copies OAM buffer to PPU memory
-            LDA   #$70                    ; Y-coordinate
-            STA   $0200
-            LDA   #$03                    ; tile number
-            STA   $0201
-            LDA   #$00                    ; attributes flag
-            STA   $0202
-            LDA   #$80                    ; X-coordinate
-            STA   $0203
+            LDX   #$00
+load_sprts: LDA   sprites,X               ; write sprite data
+            STA   $0200,X
+            INX
+            CPX   #$10
+            BNE   load_sprts
 
 vblankwait: BIT PPUSTATUS
             BPL vblankwait
             LDA #%10010000  ; turn on NMIs, sprites use first pattern table
             STA PPUCTRL
-            LDA #%00011110  ; turn on screen
+            LDA #%00011110  ; render background
             STA PPUMASK
 
 forever:    JMP   forever
@@ -59,5 +53,23 @@ forever:    JMP   forever
 
 .segment "CHR"                            ; CHR-ROM
 .incbin "graphics.chr"
+
+.segment "RODATA"                         
+pallettes:  
+; background pallettes
+.byte $11, $11, $11, $11
+.byte $11, $11, $11, $11
+.byte $11, $11, $11, $11
+.byte $11, $11, $11, $11
+; sprite pallettes
+.byte $11, $09, $19, $29
+.byte $11, $03, $21, $31
+.byte $11, $06, $16, $26
+.byte $11, $09, $19, $29
+sprites:
+.byte $00, $03, $00, $00
+.byte $10, $04, $00, $10
+.byte $20, $07, $00, $20
+.byte $30, $08, $00, $30
 
 .segment "STARTUP"
