@@ -7,10 +7,10 @@
 .endproc
 
 .proc nmi_handler                         ; draw frame interrupt (60/sec)
-            LDA #$00                      ; transfer a page of OAM buffer ($0200-$02FF) into PPU
-            STA OAMADDR
-            LDA #$02
-            STA OAMDMA
+            LDA   #$00                    ; transfer a page of OAM buffer ($0200-$02FF) into PPU
+            STA   OAMADDR
+            LDA   #$02
+            STA   OAMDMA
             RTI
 .endproc
 
@@ -38,15 +38,21 @@ load_sprts: LDA   sprites,X               ; write sprite data
             CPX   #$10
             BNE   load_sprts
 
-vblankwait: BIT PPUSTATUS
-            BPL vblankwait
-            LDA #%10010000  ; turn on NMIs, sprites use first pattern table
-            STA PPUCTRL
-            LDA #%00011110  ; render background
-            STA PPUMASK
+vblankwait: BIT   PPUSTATUS
+            BPL   vblankwait
+            LDA   #%10010000              ; turn on NMIs, sprites use first pattern table
+            STA   PPUCTRL
+            LDA   #%00011110              ; render background
+            STA   PPUMASK
 
-forever:    JMP   forever
+forever:    STX   $0000
+            INX
+            JMP   forever
 .endproc
+
+; TODO: static background
+; TODO: input and hero movement
+; TODO: background scrolling
 
 .segment "VECTORS"                        ; specify interrupt handlers
 .addr nmi_handler, reset_handler, irq_handler
@@ -65,11 +71,11 @@ pallettes:
 .byte $11, $09, $19, $29
 .byte $11, $03, $21, $31
 .byte $11, $06, $16, $26
-.byte $11, $09, $19, $29
+.byte $11, $02, $02, $02
 sprites:
 .byte $07, $03, $00, $00
-.byte $10, $04, $00, $10
-.byte $20, $07, $00, $20
-.byte $30, $07, $00, $30
+.byte $10, $04, $01, $10
+.byte $20, $07, $02, $20
+.byte $30, $08, $03, $30
 
 .segment "STARTUP"
