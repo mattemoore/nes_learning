@@ -18,25 +18,59 @@
 
 .export main                              ; make main referrable
 .proc main
+            
+            ; write palletes to PPU
             LDX   PPUSTATUS               ; prep PPU for writing
             LDX   #$3F                    ; store PPU write address ($3F00 is start of pallette memory)
             STX   PPUADDR
-            LDX   #$00
+            LDX   #$00                    
             STX   PPUADDR
-          
             LDX   #$00
-load_plts1: LDA   pallettes,X             ; write background pallette values in PPU memory
+load_plts:  LDA   pallettes,X
             STA   PPUDATA
             INX
             CPX   #$20
-            BNE   load_plts1
+            BNE   load_plts
 
+            ; write sprites to OAM buffer
             LDX   #$00
-load_sprts: LDA   sprites,X               ; write sprite data
+load_sprts: LDA   sprites,X               
             STA   $0200,X
             INX
             CPX   #$10
             BNE   load_sprts
+
+            ; write nametable 0 (background)
+            LDX   PPUSTATUS               ; prep PPU for writing
+            LDX   #$20                    ; store PPU write address ($2000 is start of nametable 0)
+            STX   PPUADDR
+            LDX   #$00                    
+            STX   PPUADDR
+
+
+            ; 4 pages x 256 = 1024 bytes written
+            pageCtr = $04
+            
+            ; store address of screen
+            LDA   #<screen1 
+            STA   $00                                 ;81
+            LDA   #>screen1                          
+            STA   $01                                 ;30               
+
+            ; while pages remain, loop through each byte of current page...
+            LDY   $0
+load_back:  LDA   ($00),Y                             ; read a byte
+            STA   PPUDATA                             ; write a byte
+            INY   
+            BNE   load_back                           ; next byte
+
+            DEC   pageCtr                             ; finished page, one less to go
+            BEQ   done_load                           ; done all pages, exit
+            ; TODO : fix the loop up
+
+            INC   screen1ptr+1                        ; next page;
+            BNE   load_back                           ; more pages remaining;
+done_load:  
 
 vblankwait: BIT   PPUSTATUS
             BPL   vblankwait
@@ -45,9 +79,7 @@ vblankwait: BIT   PPUSTATUS
             LDA   #%00011110              ; render background
             STA   PPUMASK
 
-forever:    STX   $0000
-            INX
-            JMP   forever
+forever:    JMP   forever
 .endproc
 
 ; TODO: static background
@@ -77,5 +109,7 @@ sprites:
 .byte $10, $04, $01, $10
 .byte $20, $07, $02, $20
 .byte $30, $08, $03, $30
+
+.include "screen1.asm"
 
 .segment "STARTUP"
