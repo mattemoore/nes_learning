@@ -11,7 +11,5 @@
             STX PPUCTRL
             STX PPUMASK
 
-vblankwait: BIT PPUSTATUS                 ; wait until PPU ready
-            BPL vblankwait
             JMP main
 .endproc

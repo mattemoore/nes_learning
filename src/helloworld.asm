@@ -11,6 +11,13 @@
             STA   OAMADDR
             LDA   #$02
             STA   OAMDMA
+            LDA   #%10000000              ; turn on NMIs, sprites use first pattern table
+            STA   PPUCTRL
+            LDA   #%00011110              ; render background
+            STA   PPUMASK
+            LDA   #$00                    ; tell the ppu there is no background scrolling
+            STA   PPUSCROLL
+            STA   PPUSCROLL
             RTI
 .endproc
 
@@ -41,48 +48,48 @@ load_sprts: LDA   sprites,X
             BNE   load_sprts
 
             ; write nametable 0 (background)
-            LDX   PPUSTATUS               ; prep PPU for writing
-            LDX   #$20                    ; store PPU write address ($2000 is start of nametable 0)
+            LDX   PPUSTATUS                           ; prep PPU for writing
+            LDX   #$20                                ; store PPU write address ($2000 is start of nametable 0)
             STX   PPUADDR
             LDX   #$00                    
             STX   PPUADDR
-
-
-            ; 4 pages x 256 = 1024 bytes written
-            pageCtr = $04
             
-            ; store address of screen
-            LDA   #<screen1 
-            STA   $00                                 ;81
-            LDA   #>screen1                          
-            STA   $01                                 ;30               
+            ; store address of screen data ($8130)
+            screenPtr = $0000
+            LDA   #<screen1                          
+            STA   screenPtr              ;30  
+            LDA   #>screen1 
+            STA   screenPtr+1            ;81
+
+            ; 4 pages of 256 bytes = 1024 bytes to write
+            pageCtr = $0002
+            LDA #$04
+            STA pageCtr
 
             ; while pages remain, loop through each byte of current page...
-            LDY   $0
-load_back:  LDA   ($00),Y                             ; read a byte
-            STA   PPUDATA                             ; write a byte
+            LDY   #$00
+load_back:  LDA   (screenPtr),Y           ; read current byte
+            STA   PPUDATA                 ; write current byte
             INY   
-            BNE   load_back                           ; next byte
+            BNE   load_back               ; move to next byte
 
-            DEC   pageCtr                             ; finished page, one less to go
-            BEQ   done_load                           ; done all pages, exit
-            ; TODO : fix the loop up
+            DEC   pageCtr                 ; finished page, one less to go
+            BEQ   done_load               ; done all pages, exit
 
-            INC   screen1ptr+1                        ; next page;
-            BNE   load_back                           ; more pages remaining;
+            INC   screenPtr+1             ; move start byte to next page
+            BNE   load_back               ; start processing next page
 done_load:  
 
 vblankwait: BIT   PPUSTATUS
             BPL   vblankwait
-            LDA   #%10010000              ; turn on NMIs, sprites use first pattern table
+vblankwait2:BIT   PPUSTATUS
+            BPL   vblankwait2
+            LDA   #%10000000              ; turn on NMIs
             STA   PPUCTRL
-            LDA   #%00011110              ; render background
-            STA   PPUMASK
 
 forever:    JMP   forever
 .endproc
 
-; TODO: static background
 ; TODO: input and hero movement
 ; TODO: background scrolling
 
@@ -92,24 +99,17 @@ forever:    JMP   forever
 .segment "CHR"                            ; CHR-ROM
 .incbin "graphics.chr"
 
-.segment "RODATA"                         
-pallettes:  
-; background pallettes
-.byte $11, $11, $11, $11
-.byte $11, $11, $11, $11
-.byte $11, $11, $11, $11
-.byte $11, $11, $11, $11
-; sprite pallettes
-.byte $11, $09, $19, $29
-.byte $11, $03, $21, $31
-.byte $11, $06, $16, $26
-.byte $11, $02, $02, $02
+.segment "RODATA"
+pallettes:                   
+.include "pallettes.asm"
+
 sprites:
 .byte $07, $03, $00, $00
 .byte $10, $04, $01, $10
 .byte $20, $07, $02, $20
 .byte $30, $08, $03, $30
 
+screen1:
 .include "screen1.asm"
 
 .segment "STARTUP"
