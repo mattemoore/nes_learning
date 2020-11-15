@@ -21,12 +21,19 @@
             RTI
 .endproc
 
-.import reset_handler                     ; imported reset handler
-.import copy_1024
+.proc reset_handler                       ; startup/reset button interrupt
+            SEI                           ; ignore interrupts
+            CLD
+
+            LDX #$00                      ; disable rendering during startup
+            STX PPUCTRL
+            STX PPUMASK
+
+            JMP main
+.endproc
 
 .export main                              ; make main referrable
 .proc main
-            
             ; write palletes to PPU
             LDX   PPUSTATUS               ; prep PPU for writing
             LDX   #$3F                    ; store PPU write address ($3F00 is start of pallette memory)
@@ -47,39 +54,16 @@ load_sprts: LDA   sprites,X
             INX
             CPX   #$10
             BNE   load_sprts
-
-            ; write nametable 0 (background)
-            LDX   PPUSTATUS                           ; prep PPU for writing
-            LDX   #$20                                ; store PPU write address ($2000 is start of nametable 0)
-            STX   PPUADDR
-            LDX   #$00                    
-            STX   PPUADDR
             
-            ; store address of screen data ($8130)
-            screenPtr = $0000
-            LDA   #<screen1                          
-            STA   screenPtr              ;30  
-            LDA   #>screen1 
-            STA   screenPtr+1            ;81
+            LDX   #<screen1
+            LDY   #>screen1
+            LDA   #$00
+            JSR   load_screen
 
-            ; 4 pages of 256 bytes = 1024 bytes to write
-            pageCtr = $0002
-            LDA #$04
-            STA pageCtr
-
-            ; while pages remain, loop through each byte of current page...
-            LDY   #$00
-load_back:  LDA   (screenPtr),Y           ; read current byte
-            STA   PPUDATA                 ; write current byte
-            INY   
-            BNE   load_back               ; move to next byte
-
-            DEC   pageCtr                 ; finished page, one less to go
-            BEQ   done_load               ; done all pages, exit
-
-            INC   screenPtr+1             ; move start byte to next page
-            BNE   load_back               ; start processing next page
-done_load:  
+            LDX   #<screen2
+            LDY   #>screen2
+            LDA   #$01
+            JSR   load_screen
 
 vblankwait: BIT   PPUSTATUS
             BPL   vblankwait
@@ -88,13 +72,12 @@ vblankwait2:BIT   PPUSTATUS
             LDA   #%10000000              ; turn on NMIs
             STA   PPUCTRL
 
-            JSR   copy_1024
-
 forever:    JMP   forever
 .endproc
 
+.include "helpers/load_screen.asm"
+; TODO: background scrolling 2 nametables (refactor copy_1024 to load any nametable)
 ; TODO: input and hero movement
-; TODO: background scrolling 2 nametables
 ; TODO: background scrolling >2 namteables
 
 .segment "VECTORS"                        ; specify interrupt handlers
@@ -103,17 +86,8 @@ forever:    JMP   forever
 .segment "CHR"                            ; CHR-ROM
 .incbin "graphics.chr"
 
-.segment "RODATA"
-pallettes:                   
+.segment "RODATA"                                    
 .include "pallettes.asm"
-
-sprites:
-.byte $07, $03, $00, $00
-.byte $10, $04, $01, $10
-.byte $20, $07, $02, $20
-.byte $30, $08, $03, $30
-
+.include "sprites.asm"
 .include "screen1.asm"
 .include "screen2.asm"
-
-.segment "STARTUP"
