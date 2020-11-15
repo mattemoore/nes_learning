@@ -91,7 +91,8 @@ forever:    JMP   forever
 .endproc
 
 ; TODO: input and hero movement
-; TODO: background scrolling
+; TODO: background scrolling 2 nametables
+; TODO: background scrolling >2 namteables
 
 .segment "VECTORS"                        ; specify interrupt handlers
 .addr nmi_handler, reset_handler, irq_handler
@@ -109,7 +110,7 @@ sprites:
 .byte $20, $07, $02, $20
 .byte $30, $08, $03, $30
 
-screen1:
 .include "screen1.asm"
+.include "screen2.asm"
 
 .segment "STARTUP"
