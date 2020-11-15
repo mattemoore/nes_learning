@@ -22,6 +22,7 @@
 .endproc
 
 .import reset_handler                     ; imported reset handler
+.import copy_1024
 
 .export main                              ; make main referrable
 .proc main
@@ -86,6 +87,8 @@ vblankwait2:BIT   PPUSTATUS
             BPL   vblankwait2
             LDA   #%10000000              ; turn on NMIs
             STA   PPUCTRL
+
+            JSR   copy_1024
 
 forever:    JMP   forever
 .endproc
