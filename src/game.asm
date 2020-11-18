@@ -11,8 +11,6 @@
             STA   OAMADDR
             LDA   #$02
             STA   OAMDMA
-            LDA   #%10000000              ; turn on NMIs, sprites use first pattern table
-            STA   PPUCTRL
             LDA   #%00011110              ; render background
             STA   PPUMASK
             INC   CAM_X
@@ -20,7 +18,9 @@
             STA   PPUSCROLL
             LDA   CAM_Y
             STA   PPUSCROLL
-
+            ; TODO: Docs state we should be setting scoll position in PPUCTRL, maybe only if not doing one-direction scrolling?
+            LDA   #%10000000              ; turn on NMIs, sprites use first pattern table, update camera position
+            STA   PPUCTRL
             RTI
 .endproc
 
