@@ -15,9 +15,12 @@
             STA   PPUCTRL
             LDA   #%00011110              ; render background
             STA   PPUMASK
-            LDA   #$00                    ; tell the ppu there is no background scrolling
+            INC   CAM_X
+            LDA   CAM_X                   ; update camera position
             STA   PPUSCROLL
+            LDA   CAM_Y
             STA   PPUSCROLL
+
             RTI
 .endproc
 
@@ -72,13 +75,18 @@ vblankwait2:BIT   PPUSTATUS
             LDA   #%10000000              ; turn on NMIs
             STA   PPUCTRL
 
-forever:    JMP   forever
+            LDA   #$00
+            STA   CAM_Y
+            STA   CAM_X
+forever:    
+            JMP   forever
 .endproc
 
 .include "helpers/load_screen.asm"
-; TODO: background scrolling 2 nametables (refactor copy_1024 to load any nametable)
+; TODO: background scrolling 2 nametables 
+; TODO: background scrolling >2 namteables 
 ; TODO: input and hero movement
-; TODO: background scrolling >2 namteables
+; TODO: scroll > 2 screens based on hero movement
 
 .segment "VECTORS"                        ; specify interrupt handlers
 .addr nmi_handler, reset_handler, irq_handler
