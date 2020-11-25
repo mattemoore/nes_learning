@@ -6,21 +6,35 @@
             RTI
 .endproc
 
-.proc nmi_handler                         ; draw frame interrupt (60/sec)
-            LDA   #$00                    ; transfer a page of OAM buffer ($0200-$02FF) into PPU
+.proc nmi_handler
+            ; transfer a page of OAM (sprite) buffer ($0200-$02FF) into PPU
+            LDA   #$00  
             STA   OAMADDR
             LDA   #$02
             STA   OAMDMA
-            LDA   #%00011110              ; render background
-            STA   PPUMASK
+
+            ; scroll camera, swap nametables to enable smooth wrap around scrolling
             INC   CAM_X
-            LDA   CAM_X                   ; update camera position
+            BNE   done_wrap
+wrap:
+            LDA   NAMETABLE
+            EOR   #$01
+            STA   NAMETABLE
+done_wrap:
+            LDA   CAM_X       
             STA   PPUSCROLL
-            LDA   CAM_Y
+            LDA   #$00
             STA   PPUSCROLL
-            ; TODO: Docs state we should be setting scoll position in PPUCTRL, maybe only if not doing one-direction scrolling?
-            LDA   #%10000000              ; turn on NMIs, sprites use first pattern table, update camera position
+
+            ; turn on NMIs, set pattern table, set nametable
+            LDA   #%10000000
+            ORA   NAMETABLE
             STA   PPUCTRL
+
+            ; toggle drawing of sprites, background, clipping etc.
+            LDA   #%00011110
+            STA   PPUMASK
+
             RTI
 .endproc
 
@@ -39,7 +53,7 @@
 .proc main
             ; write palletes to PPU
             LDX   PPUSTATUS               ; prep PPU for writing
-            LDX   #$3F                    ; store PPU write address ($3F00 is start of pallette memory)
+            LDX   #$3F                     ; store PPU write address ($3F00 is start of pallette memory)
             STX   PPUADDR
             LDX   #$00                    
             STX   PPUADDR
@@ -75,8 +89,8 @@ vblankwait2:BIT   PPUSTATUS
             LDA   #%10000000              ; turn on NMIs
             STA   PPUCTRL
 
+            ; set defaults
             LDA   #$00
-            STA   CAM_Y
             STA   CAM_X
 forever:    
             JMP   forever
@@ -84,8 +98,9 @@ forever:
 
 .include "helpers/load_screen.asm"
 ; TODO: background scrolling 2 nametables 
-; TODO: background scrolling >2 namteables 
-; TODO: input and hero movement
+;           1. DONE - Wraparound scrolling of two nametables
+;           2. TODO - Start writing columns offscreen etc. to implment scrolling > 2 screens
+;           2. a) every 16px scroll write new tile
 ; TODO: scroll > 2 screens based on hero movement
 
 .segment "VECTORS"                        ; specify interrupt handlers
