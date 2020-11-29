@@ -26,6 +26,19 @@ done_wrap:
             LDA   #$00
             STA   PPUSCROLL
 
+            ; draw off screen columns if scrolled 16px
+            LDX   #00
+            STX   DRAW_COL
+            LDA   CAM_X
+            AND   #%00001111     ; check if multiple of 16 (16px:1 background tile)
+            BNE   done_col  
+            LDX   #01
+            STX   DRAW_COL
+            ; TODO: find where to draw to (i.e which column in which nametable)
+            ; TODO: draw something there
+            ; TODO: draw the right stuff there
+done_col:
+
             ; turn on NMIs, set pattern table, set nametable
             LDA   #%10000000
             ORA   NAMETABLE
@@ -53,7 +66,7 @@ done_wrap:
 .proc main
             ; write palletes to PPU
             LDX   PPUSTATUS               ; prep PPU for writing
-            LDX   #$3F                     ; store PPU write address ($3F00 is start of pallette memory)
+            LDX   #$3F                    ; store PPU write address ($3F00 is start of pallette memory)
             STX   PPUADDR
             LDX   #$00                    
             STX   PPUADDR
@@ -97,10 +110,18 @@ forever:
 .endproc
 
 .include "helpers/load_screen.asm"
-; TODO: background scrolling 2 nametables 
-;           1. DONE - Wraparound scrolling of two nametables
-;           2. TODO - Start writing columns offscreen etc. to implment scrolling > 2 screens
-;           2. a) every 16px scroll write new tile
+;     Scrolling Maps
+;           1. DONE - Wraparound scrolling of two screens
+;           2. Continuous scrolling of >2 screens
+;                 Start writing columns offscreen etc. to implement scrolling > 2 screens
+;                       a) DONE - every 16px scroll to the right write new tile(s) flag drawing a column
+;                       b) implement drawing the column - write fake data
+;                       c) " - write real data
+;           3. Scroll to the right based on hero movement
+;           4. Enable scrolling to the left
+;           5. Scroll to the left based on hero movement
+;           6. Stop scrolling at left-most and right-most ends of map
+
 ; TODO: scroll > 2 screens based on hero movement
 
 .segment "VECTORS"                        ; specify interrupt handlers

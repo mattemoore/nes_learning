@@ -11,3 +11,4 @@ OAMDMA      =     $4014
 ; Global game variables
 CAM_X       =     $0100
 NAMETABLE   =     $0101
+DRAW_COL    =     $0102
