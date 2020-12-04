@@ -13,6 +13,55 @@
             LDA   #$02
             STA   OAMDMA
 
+            ; draw off screen columns if scrolled 16px
+load_seam:
+            LDA   CAM_X
+            AND   #%00000111              ; check if multiple of 16 (16px:1 background tile)
+            BNE   done_cols 
+            ; find which column  to draw to (i.e which 16x16 column in which nametable)
+            LDA   CAM_X
+            LSR   A
+            LSR   A
+            LSR   A 
+            ; LSR   A
+            STA   DRAW_COL
+            ASL   A
+            STA   COL_LO
+
+            ; TODO: draw a column of something in proper column in proper nametable 
+            LDA   NAMETABLE
+            EOR   #$01
+            CMP   #$00
+            BEQ   set_name0
+            LDA   #$24
+            STA   COL_HIGH
+            JMP   start_col
+set_name0:  
+            LDA   #$20
+            STA   COL_HIGH
+
+            LDY   #$02                    ; write two columns of 8x8 tiles
+start_col:                         
+            LDA   #%00000100              ; write one column of 8x8 tiles
+            STA   PPUCTRL
+            LDA   PPUSTATUS
+            LDX   COL_HIGH
+            STX   PPUADDR
+            ; LDX   COL_LO
+            LDX   DRAW_COL
+            STX   PPUADDR
+            LDX   #$1E
+write_byte:                         
+            LDA   CAM_X                 ; TODO: point to the right part of map to load in
+            STA   PPUDATA
+            DEX
+            BNE   write_byte
+; end_col:   
+;             INC   COL_LO
+;             DEY
+;             BNE   start_col
+done_cols:
+
             ; scroll camera, swap nametables to enable smooth wrap around scrolling
             INC   CAM_X
             BNE   done_wrap
@@ -21,23 +70,11 @@ wrap:
             EOR   #$01
             STA   NAMETABLE
 done_wrap:
+
             LDA   CAM_X       
             STA   PPUSCROLL
             LDA   #$00
             STA   PPUSCROLL
-
-            ; draw off screen columns if scrolled 16px
-            LDX   #00
-            STX   DRAW_COL
-            LDA   CAM_X
-            AND   #%00001111     ; check if multiple of 16 (16px:1 background tile)
-            BNE   done_col  
-            LDX   #01
-            STX   DRAW_COL
-            ; TODO: find where to draw to (i.e which column in which nametable)
-            ; TODO: draw something there
-            ; TODO: draw the right stuff there
-done_col:
 
             ; turn on NMIs, set pattern table, set nametable
             LDA   #%10000000
@@ -85,6 +122,7 @@ load_sprts: LDA   sprites,X
             CPX   #$10
             BNE   load_sprts
             
+            ; init nametables
             LDX   #<screen1
             LDY   #>screen1
             LDA   #$00
