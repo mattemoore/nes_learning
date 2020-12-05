@@ -16,14 +16,14 @@
             ; draw off screen columns if scrolled 16px
 load_seam:
             LDA   CAM_X
-            AND   #%00000111              ; check if multiple of 16 (16px:1 background tile)
+            AND   #%00001111              ; check if multiple of 16 (16px:1 background tile)
             BNE   done_cols 
             ; find which column  to draw to (i.e which 16x16 column in which nametable)
             LDA   CAM_X
             LSR   A
             LSR   A
             LSR   A 
-            ; LSR   A
+            LSR   A
             STA   DRAW_COL
             ASL   A
             STA   COL_LO
@@ -39,16 +39,16 @@ load_seam:
 set_name0:  
             LDA   #$20
             STA   COL_HIGH
-
+start_col:
             LDY   #$02                    ; write two columns of 8x8 tiles
-start_col:                         
+write_col:                     
             LDA   #%00000100              ; write one column of 8x8 tiles
             STA   PPUCTRL
             LDA   PPUSTATUS
             LDX   COL_HIGH
             STX   PPUADDR
-            ; LDX   COL_LO
-            LDX   DRAW_COL
+            LDX   COL_LO
+            ; LDX   DRAW_COL
             STX   PPUADDR
             LDX   #$1E
 write_byte:                         
@@ -56,10 +56,10 @@ write_byte:
             STA   PPUDATA
             DEX
             BNE   write_byte
-; end_col:   
-;             INC   COL_LO
-;             DEY
-;             BNE   start_col
+end_col:   
+            INC   COL_LO
+            DEY
+            BNE   write_col
 done_cols:
 
             ; scroll camera, swap nametables to enable smooth wrap around scrolling
