@@ -35,11 +35,11 @@ load_seam:
             BEQ   set_name0
             LDA   #$24
             STA   COL_HIGH
-            JMP   start_col
+            JMP   start_cols
 set_name0:  
             LDA   #$20
             STA   COL_HIGH
-start_col:
+start_cols:
             LDY   #$02                    ; write two columns of 8x8 tiles
 write_col:                     
             LDA   #%00000100              ; write one column of 8x8 tiles
@@ -52,7 +52,7 @@ write_col:
             STX   PPUADDR
             LDX   #$1E
 write_byte:                         
-            LDA   CAM_X                 ; TODO: point to the right part of map to load in
+            LDA   $FF                 ; TODO: point to the right part of map to load in
             STA   PPUDATA
             DEX
             BNE   write_byte
@@ -60,7 +60,7 @@ end_col:
             INC   COL_LO
             DEY
             BNE   write_col
-done_cols:
+end_cols:
 
             ; scroll camera, swap nametables to enable smooth wrap around scrolling
             INC   CAM_X
