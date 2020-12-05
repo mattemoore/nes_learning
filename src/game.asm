@@ -17,7 +17,7 @@
 load_seam:
             LDA   CAM_X
             AND   #%00001111              ; check if multiple of 16 (16px:1 background tile)
-            BNE   done_cols 
+            BNE   end_cols 
             ; find which column  to draw to (i.e which 16x16 column in which nametable)
             LDA   CAM_X
             LSR   A
@@ -52,7 +52,7 @@ write_col:
             STX   PPUADDR
             LDX   #$1E
 write_byte:                         
-            LDA   $FF                 ; TODO: point to the right part of map to load in
+            LDA   CAM_X                 ; TODO: point to the right part of map to load in
             STA   PPUDATA
             DEX
             BNE   write_byte
