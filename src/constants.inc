@@ -14,3 +14,6 @@ NAMETABLE   =     $0101
 DRAW_COL    =     $0102
 COL_HIGH    =     $0103
 COL_LO      =     $0104
+CURR_SCRN   =     $0105
+
+SCRN_MEM    =     $0110

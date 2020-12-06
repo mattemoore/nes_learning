@@ -18,7 +18,7 @@ load_seam:
             LDA   CAM_X
             AND   #%00001111              ; check if multiple of 16 (16px:1 background tile)
             BNE   end_cols 
-            ; find which column  to draw to (i.e which 16x16 column in which nametable)
+            ; find which column to draw to (i.e which 16x16 column in which nametable)
             LDA   CAM_X
             LSR   A
             LSR   A
@@ -28,7 +28,7 @@ load_seam:
             ASL   A
             STA   COL_LO
 
-            ; TODO: draw a column of something in proper column in proper nametable 
+            ; draw column to proper nametable
             LDA   NAMETABLE
             EOR   #$01
             CMP   #$00
@@ -66,6 +66,7 @@ end_cols:
             INC   CAM_X
             BNE   done_wrap
 wrap:
+            INC   CURR_SCRN
             LDA   NAMETABLE
             EOR   #$01
             STA   NAMETABLE
@@ -133,6 +134,33 @@ load_sprts: LDA   sprites,X
             LDA   #$01
             JSR   load_screen
 
+            ; set defaults
+            LDA   #$00
+            STA   CAM_X
+            LDA   #$02
+            STA   CURR_SCRN
+
+            ; put memory location of screens into RAM
+            LDA   #<screen1
+            STA   SCRN_MEM
+            LDA   #>screen1
+            STA   SCRN_MEM+1
+
+            LDA   #<screen2
+            STA   SCRN_MEM+2
+            LDA   #>screen2
+            STA   SCRN_MEM+3
+
+            LDA   #<screen3
+            STA   SCRN_MEM+4
+            LDA   #>screen3
+            STA   SCRN_MEM+5
+
+            LDA   #<screen4
+            STA   SCRN_MEM+6
+            LDA   #>screen4
+            STA   SCRN_MEM+7
+
 vblankwait: BIT   PPUSTATUS
             BPL   vblankwait
 vblankwait2:BIT   PPUSTATUS
@@ -140,9 +168,6 @@ vblankwait2:BIT   PPUSTATUS
             LDA   #%10000000              ; turn on NMIs
             STA   PPUCTRL
 
-            ; set defaults
-            LDA   #$00
-            STA   CAM_X
 forever:    
             JMP   forever
 .endproc
@@ -153,7 +178,7 @@ forever:
 ;           2. Continuous scrolling of >2 screens
 ;                 Start writing columns offscreen etc. to implement scrolling > 2 screens
 ;                       a) DONE - every 16px scroll to the right write new tile(s) flag drawing a column
-;                       b) implement drawing the column - write fake data
+;                       b) DONE - implement drawing the column - write fake data
 ;                       c) " - write real data
 ;           3. Scroll to the right based on hero movement
 ;           4. Enable scrolling to the left
@@ -173,3 +198,5 @@ forever:
 .include "sprites.asm"
 .include "screen1.asm"
 .include "screen2.asm"
+.include "screen3.asm"
+.include "screen4.asm"
