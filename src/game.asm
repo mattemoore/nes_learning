@@ -13,22 +13,19 @@
             LDA   #$02
             STA   OAMDMA
 
-            ; draw off screen columns if scrolled 16px
+            ; draw seam that is two tiles wide (16px) if we have scrolled by that amount
 load_seam:
             LDA   CAM_X
             AND   #%00001111              ; check if multiple of 16 (16px:1 background tile)
             BNE   end_cols 
-            ; find which column to draw to (i.e which 16x16 column in which nametable)
-            LDA   CAM_X
+            
+            LDA   CAM_X                   ; find which column to draw to (i.e which virtual 16px column in which nametable)
             LSR   A
             LSR   A
             LSR   A 
-            LSR   A
-            STA   DRAW_COL
-            ASL   A
-            STA   COL_LO
+            STA   COL_LO                  ; COL_LO is column idx based on real nametable 8px column
 
-            ; draw column to proper nametable
+            ; draw column to proper nametable memory location ($2000 or $2400)
             LDA   NAMETABLE
             EOR   #$01
             CMP   #$00
@@ -39,26 +36,49 @@ load_seam:
 set_name0:  
             LDA   #$20
             STA   COL_HIGH
+
 start_cols:
-            LDY   #$02                    ; write two columns of 8x8 tiles
+            LDA   #$02                    ; write two columns of 8x8 tiles
+            STA   COLS_REM
 write_col:                     
-            LDA   #%00000100              ; write one column of 8x8 tiles
+            LDA   #%00000100              ; prep PPU nametable mem location for writing           
             STA   PPUCTRL
             LDA   PPUSTATUS
-            LDX   COL_HIGH
+            LDX   COL_HIGH                
             STX   PPUADDR
             LDX   COL_LO
-            ; LDX   DRAW_COL
             STX   PPUADDR
-            LDX   #$1E
+
+            LDA   CURR_SCRN              ; determine where to read seam data from
+            ASL   A                      ; TODO: Move this out of loop as seams don't cross screens
+            TAX
+            screenPtr = $00              ; store current screen memory location in zero page
+            LDA   SCRN_MEM,X
+            STA   screenPtr
+            INX
+            LDA   SCRN_MEM,X
+            STA   screenPtr+1
+
+            LDY   COL_LO                 ; move COL_LO columns to the right from start of screen memory 
+            LDA   #$1E                   ; one column is 30 bytes tall
+            STA   BYTES_IN_COL
 write_byte:                         
-            LDA   CAM_X                 ; TODO: point to the right part of map to load in
+            LDA   (screenPtr),Y          
             STA   PPUDATA
-            DEX
+            
+            TYA                          ; increase Y by one row which is 32 bytes wide
+            ADC   #$20                    
+            TAY   
+
+            BCC   next_byte              ; Y did not roll over so move to next byte
+            INC   screenPtr+1            ; Y rolled over so increase hi byte of mem location by one
+            CLC                          ; clear carry flag so Y is not increased by an extra 1 next time
+next_byte: 
+            DEC   BYTES_IN_COL
             BNE   write_byte
 end_col:   
             INC   COL_LO
-            DEY
+            DEC   COLS_REM
             BNE   write_col
 end_cols:
 
@@ -137,7 +157,7 @@ load_sprts: LDA   sprites,X
             ; set defaults
             LDA   #$00
             STA   CAM_X
-            LDA   #$02
+            LDA   #$01
             STA   CURR_SCRN
 
             ; put memory location of screens into RAM

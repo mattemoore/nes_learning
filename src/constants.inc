@@ -8,12 +8,15 @@ PPUDATA     =     $2007
 OAMADDR     =     $2003
 OAMDMA      =     $4014
 
-; Global game variables
+; NMI variables
 CAM_X       =     $0100
 NAMETABLE   =     $0101
-DRAW_COL    =     $0102
+; DRAW_COL    =     $0102     ; TODO: Remove unused var
 COL_HIGH    =     $0103
 COL_LO      =     $0104
 CURR_SCRN   =     $0105
+COLS_REM    =     $0106       ;could be refactored to use zero-page or variable?
+BYTES_IN_COL=     $0107       ;could be refactored to use zero-page or variable?
 
+; 16 bytes of pointers (0110 - 011F) to screens making up current level
 SCRN_MEM    =     $0110
