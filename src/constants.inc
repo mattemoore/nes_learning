@@ -11,7 +11,7 @@ OAMDMA      =     $4014
 ; NMI variables
 CAM_X       =     $0100
 NAMETABLE   =     $0101
-; DRAW_COL    =     $0102     ; TODO: Remove unused var
+DRAW_SEAM    =    $0102     
 COL_HIGH    =     $0103
 COL_LO      =     $0104
 CURR_SCRN   =     $0105

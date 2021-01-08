@@ -7,39 +7,32 @@
 .endproc
 
 .proc nmi_handler
+            ; TODO: push registers on stack
+
             ; transfer a page of OAM (sprite) buffer ($0200-$02FF) into PPU
             LDA   #$00  
             STA   OAMADDR
             LDA   #$02
             STA   OAMDMA
 
-            ; draw seam that is two tiles wide (16px) if we have scrolled by that amount
-load_seam:
-            LDA   CAM_X
-            AND   #%00001111              ; check if multiple of 16 (16px:1 background tile)
-            BNE   end_cols 
-            
-            LDA   CAM_X                   ; find which column to draw to (i.e which virtual 16px column in which nametable)
-            LSR   A
-            LSR   A
-            LSR   A 
-            STA   COL_LO                  ; COL_LO is column idx based on real nametable 8px column
-
-            ; draw column to proper nametable memory location ($2000 or $2400)
-            LDA   NAMETABLE
-            EOR   #$01
-            CMP   #$00
-            BEQ   set_name0
-            LDA   #$24
-            STA   COL_HIGH
-            JMP   start_cols
-set_name0:  
-            LDA   #$20
-            STA   COL_HIGH
-
-start_cols:
+            LDA   DRAW_SEAM               
+            CMP   #$01
+            BNE   end_cols
+draw_seam:
             LDA   #$02                    ; write two columns of 8x8 tiles
             STA   COLS_REM
+
+            screenPtr = $00               ; put mem location of current screen data in zero page
+            LDA   CURR_SCRN               ; TODO: Optimize this and put this in game logic
+            ASL   A                      
+            TAX
+            LDA   SCRN_MEM,X
+            STA   screenPtr
+            INX
+            LDA   SCRN_MEM,X
+            STA   screenPtr+1
+            STA   screenPtr+2             ; HACK: save copy of original hi byte of screen data address
+            
 write_col:                     
             LDA   #%00000100              ; prep PPU nametable mem location for writing           
             STA   PPUCTRL
@@ -49,34 +42,26 @@ write_col:
             LDX   COL_LO
             STX   PPUADDR
 
-            LDA   CURR_SCRN              ; determine where to read seam data from
-            ASL   A                      ; TODO: Move this out of loop as seams don't cross screens
-            TAX
-            screenPtr = $00              ; store current screen memory location in zero page
-            LDA   SCRN_MEM,X
-            STA   screenPtr
-            INX
-            LDA   SCRN_MEM,X
-            STA   screenPtr+1
-
-            LDY   COL_LO                 ; move COL_LO columns to the right from start of screen memory 
-            LDA   #$1E                   ; one column is 30 bytes tall
+            LDY   COL_LO                  ; move COL_LO columns to the right from start of screen memory 
+            LDA   #$1E                    ; one column is 30 bytes tall
             STA   BYTES_IN_COL
 write_byte:                         
-            LDA   (screenPtr),Y          
+            LDA   (screenPtr),Y      
             STA   PPUDATA
             
             TYA                          ; increase Y by one row which is 32 bytes wide
             ADC   #$20                    
             TAY   
 
-            BCC   next_byte              ; Y did not roll over so move to next byte
+            BCC   next_byte              ; Y did not roll over so move to directly to next byte
             INC   screenPtr+1            ; Y rolled over so increase hi byte of mem location by one
             CLC                          ; clear carry flag so Y is not increased by an extra 1 next time
 next_byte: 
             DEC   BYTES_IN_COL
             BNE   write_byte
 end_col:   
+            LDX   screenPtr+2             ; reset hi byte of screen data pointer
+            STX   screenPtr+1
             INC   COL_LO
             DEC   COLS_REM
             BNE   write_col
@@ -91,7 +76,6 @@ wrap:
             EOR   #$01
             STA   NAMETABLE
 done_wrap:
-
             LDA   CAM_X       
             STA   PPUSCROLL
             LDA   #$00
@@ -106,6 +90,7 @@ done_wrap:
             LDA   #%00011110
             STA   PPUMASK
 
+            ; TODO: pop registers off stack
             RTI
 .endproc
 
@@ -122,73 +107,43 @@ done_wrap:
 
 .export main                              ; make main referrable
 .proc main
-            ; write palletes to PPU
-            LDX   PPUSTATUS               ; prep PPU for writing
-            LDX   #$3F                    ; store PPU write address ($3F00 is start of pallette memory)
-            STX   PPUADDR
-            LDX   #$00                    
-            STX   PPUADDR
-            LDX   #$00
-load_plts:  LDA   pallettes,X
-            STA   PPUDATA
-            INX
-            CPX   #$20
-            BNE   load_plts
 
-            ; write sprites to OAM buffer
-            LDX   #$00
-load_sprts: LDA   sprites,X               
-            STA   $0200,X
-            INX
-            CPX   #$10
-            BNE   load_sprts
+.include "init.asm"
             
-            ; init nametables
-            LDX   #<screen1
-            LDY   #>screen1
-            LDA   #$00
-            JSR   load_screen
-
-            LDX   #<screen2
-            LDY   #>screen2
-            LDA   #$01
-            JSR   load_screen
-
-            ; set defaults
-            LDA   #$00
-            STA   CAM_X
-            LDA   #$01
-            STA   CURR_SCRN
-
-            ; put memory location of screens into RAM
-            LDA   #<screen1
-            STA   SCRN_MEM
-            LDA   #>screen1
-            STA   SCRN_MEM+1
-
-            LDA   #<screen2
-            STA   SCRN_MEM+2
-            LDA   #>screen2
-            STA   SCRN_MEM+3
-
-            LDA   #<screen3
-            STA   SCRN_MEM+4
-            LDA   #>screen3
-            STA   SCRN_MEM+5
-
-            LDA   #<screen4
-            STA   SCRN_MEM+6
-            LDA   #>screen4
-            STA   SCRN_MEM+7
-
-vblankwait: BIT   PPUSTATUS
-            BPL   vblankwait
-vblankwait2:BIT   PPUSTATUS
-            BPL   vblankwait2
-            LDA   #%10000000              ; turn on NMIs
-            STA   PPUCTRL
-
 forever:    
+           
+load_seam:    
+      set_seam_flag:  
+            LDA   #$00
+            STA   DRAW_SEAM                    
+            LDA   CAM_X
+            AND   #%00001111              
+            BNE   end_seam
+            LDA   #$01
+            STA   DRAW_SEAM               ; DRAW_SEAM flag set if scrolled 16px 
+
+      set_col_num:
+            LDA   CAM_X                   
+            LSR   A
+            LSR   A
+            LSR   A 
+            STA   COL_LO                  ; COL_LO = idx of first 8px column to draw
+
+      set_seam_nametable:
+            LDA   NAMETABLE               
+            EOR   #$01
+            CMP   #$00
+            BEQ   set_seam_name0
+            LDA   #$24
+            STA   COL_HIGH                ; COL_HIGH = high byte of target nametable address
+            JMP   end_seam
+      set_seam_name0:
+            LDA   #$20
+            STA   COL_HIGH
+
+      ; TODO: write data to buffer here then only write from buffer in NMI to min cycles in NMI
+end_seam:
+            
             JMP   forever
 .endproc
 
