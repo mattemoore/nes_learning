@@ -107,8 +107,8 @@ done_wrap:
 
 .export main                              ; make main referrable
 .proc main
-
-.include "init.asm"
+      
+            JSR   init
             
 forever:    
            
@@ -147,20 +147,7 @@ end_seam:
             JMP   forever
 .endproc
 
-.include "helpers/load_screen.asm"
-;     Scrolling Maps
-;           1. DONE - Wraparound scrolling of two screens
-;           2. Continuous scrolling of >2 screens
-;                 Start writing columns offscreen etc. to implement scrolling > 2 screens
-;                       a) DONE - every 16px scroll to the right write new tile(s) flag drawing a column
-;                       b) DONE - implement drawing the column - write fake data
-;                       c) " - write real data
-;           3. Scroll to the right based on hero movement
-;           4. Enable scrolling to the left
-;           5. Scroll to the left based on hero movement
-;           6. Stop scrolling at left-most and right-most ends of map
-
-; TODO: scroll > 2 screens based on hero movement
+.include "init.asm"
 
 .segment "VECTORS"                        ; specify interrupt handlers
 .addr nmi_handler, reset_handler, irq_handler

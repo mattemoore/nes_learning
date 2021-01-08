@@ -1,3 +1,6 @@
+.segment "CODE"
+.export init
+.proc init
 ; write palletes to PPU
             LDX   PPUSTATUS               ; prep PPU for writing
             LDX   #$3F                    ; store PPU write address ($3F00 is start of pallette memory)
@@ -60,3 +63,8 @@ vblankwait2:
             BPL   vblankwait2
             LDA   #%10000000              ; turn on NMIs when PPU is ready
             STA   PPUCTRL
+
+            RTS
+.endproc
+
+.include "helpers/load_screen.asm"
