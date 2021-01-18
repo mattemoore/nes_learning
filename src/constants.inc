@@ -20,3 +20,4 @@ BYTES_IN_COL=     $0107       ;could be refactored to use zero-page or variable?
 
 ; 16 bytes of pointers (0110 - 011F) to screens making up current level
 SCRN_MEM    =     $0110
+CURR_SCRN_MEM =   $0120       ; 2 bytes representing mem location of current scrn
