@@ -59,6 +59,8 @@ end_col:
             DEC   COLS_REM
             BNE   write_col
 end_cols:
+            ; TODO write attribute tables so background tile colors are correct
+
 
             ; scroll camera, swap nametables to enable smooth wrap around scrolling
             INC   CAM_X                   ; TODO: update CAM_X in game loop
